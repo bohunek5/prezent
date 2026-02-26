@@ -39,7 +39,7 @@
     <link rel="icon" href="../../../../../img/admin/favicon.ico" type="image/x-icon">
 
 	<!-- Google tag (gtag.js) --> <script async="" src="../../../../../../www.googletagmanager.com/gtag/js/id%3DG-NL79CEW6MJ"> </script> <script> window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} gtag('js', new Date()); gtag('config', 'G-NL79CEW6MJ'); </script>
-</head>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script></head>
 <body id="body" class="template-id-16 page-id-351 page-slug-tekus-profile">
 
 
@@ -329,7 +329,7 @@
                         </div>
                         <a href="#info" class="product__more btn-naked">More about product</a>
                         <br>
-                        <a href="../../../../../export/product/351" target="_blank" class="product__more btn-naked">Download product card</a>
+                        <a href="javascript:void(0)" class="product__more btn-naked" onclick="generatePDF(this)">Download product card</a>
                     </div>
                 </div>
             </div>
@@ -904,4 +904,45 @@
 
 
 
-</body></html>
+
+                <script>
+                    function generatePDF(button) {
+                        var originalText = button.innerHTML;
+                        button.innerHTML = 'Generowanie PDF... Proszę czekać.';
+                        button.style.pointerEvents = 'none';
+                        button.style.opacity = '0.7';
+
+                        // Znajdz sekcje z produktem
+                        var element = document.querySelector('.product') || document.body;
+                        
+                        // Zklonuj element by upewnic sie, ze wszystkie zakladki są widoczne na PDF
+                        var cloned = element.cloneNode(true);
+                        
+                        // Ukryj uciazliwe przyciski na wydruku (np sam przycisk pdf)
+                        var btns = cloned.querySelectorAll('.product__add, .product__btn, .product__more');
+                        btns.forEach(b => b.style.display = 'none');
+
+                        // Wymuś pokazanie ukrytych tabów (np. parametry techniczne)
+                        var tabs = cloned.querySelectorAll('.product__tab-content');
+                        tabs.forEach(t => t.style.display = 'block');
+                        
+                        // Pobierz tytul z h2 (.title--small) dla nazwy pliku
+                        var h2 = cloned.querySelector('h2.title');
+                        var filename = h2 ? h2.innerText.trim().replace(/[^a-zA-Z0-9_-]/g, '_') + '.pdf' : 'Karta_Produktu.pdf';
+
+                        var opt = {
+                          margin:       10,
+                          filename:     filename,
+                          image:        { type: 'jpeg', quality: 0.98 },
+                          html2canvas:  { scale: 2, useCORS: true },
+                          jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                        };
+                        
+                        html2pdf().set(opt).from(cloned).save().then(function() {
+                            button.innerHTML = originalText;
+                            button.style.pointerEvents = 'auto';
+                            button.style.opacity = '1';
+                        });
+                    }
+                </script>
+                </body></html>
