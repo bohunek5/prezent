@@ -320,7 +320,7 @@
                             <label class="product__input" style="display: none!important;">
                                 <input type="text" value="1">
                             </label>
-                            <a href="#" class="product__btn" data-add-to-cart="570"><i class="fas fa-folder-open"></i> Add to offer creator</a>
+                            <a href="#" class="product__btn" data-m-add-to-cart="570"><i class="fas fa-folder-open"></i> Add to offer creator</a>
                         </div>
                         <a href="#info" class="product__more btn-naked">More about product</a>
                         <br>
@@ -702,4 +702,116 @@
                         });
                     }
                 </script>
-                </body></html>
+                
+            <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                var style = document.createElement('style');
+                style.innerHTML = '.ofertownik-toast { position: fixed; bottom: 20px; right: 20px; background-color: #28a745; color: white; padding: 15px 25px; border-radius: 8px; box-shadow: 0 10px 15px rgba(0,0,0,0.1); font-family: inherit; z-index: 9999; opacity: 0; transform: translateY(20px); transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: none; font-size: 16px; font-weight: 500; display:flex; align-items:center; gap: 10px; } .ofertownik-toast.show { opacity: 1; transform: translateY(0); } .ofertownik-toast i { font-size: 20px; }';
+                document.head.appendChild(style);
+
+                function showToast(msg) {
+                    var toast = document.querySelector('.ofertownik-toast');
+                    if (!toast) {
+                        toast = document.createElement('div');
+                        toast.className = 'ofertownik-toast';
+                        document.body.appendChild(toast);
+                    }
+                    toast.innerHTML = '<i class="fas fa-check-circle"></i> ' + msg;
+                    toast.classList.add('show');
+                    setTimeout(function() { toast.classList.remove('show'); }, 3000);
+                }
+
+                function updateCartCounter() {
+                    var cart = JSON.parse(localStorage.getItem('m_ofertownik') || '[]');
+                    document.querySelectorAll('.header__offer__count').forEach(function(el) {
+                        el.innerText = cart.length;
+                        if(cart.length > 0) el.classList.remove('empty');
+                        else el.classList.add('empty');
+                    });
+                }
+
+                updateCartCounter();
+
+                document.querySelectorAll('[data-m-add-to-cart]').forEach(function(btn) {
+                    btn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        var productName = document.title.split('|')[0].replace('GOMAR PLUS', '').trim();
+                        var productUrl = window.location.pathname;
+                        
+                        var listingElement = this.closest('.listing__element');
+                        if (listingElement) {
+                            var titleEl = listingElement.querySelector('.listing__title');
+                            if (titleEl) productName = titleEl.innerText.trim();
+                        } else {
+                            var titleEl2 = document.querySelector('h2.title');
+                            if (titleEl2) productName = titleEl2.innerText.trim();
+                        }
+                        
+                        var productId = this.getAttribute('data-m-add-to-cart');
+
+                        var cart = JSON.parse(localStorage.getItem('m_ofertownik') || '[]');
+                        
+                        if (!cart.some(function(item) { return item.id === productId; })) {
+                            cart.push({id: productId, name: productName, url: productUrl});
+                            localStorage.setItem('m_ofertownik', JSON.stringify(cart));
+                        }
+                        
+                        updateCartCounter();
+                        showToast('Dodano <strong>' + productName + '</strong> do ofertownika');
+                    });
+                });
+
+                if (window.location.pathname.includes('ofertownik')) {
+                    renderCartPage();
+                }
+
+                function renderCartPage() {
+                    var cart = JSON.parse(localStorage.getItem('m_ofertownik') || '[]');
+                    var container = document.querySelector('.message-page__wrapper');
+                    var containerBlock = container ? container : document.querySelector('main');
+                    if (!containerBlock) return;
+
+                    if (cart.length === 0) {
+                        // Let it display what's already there (empty cart text)
+                        return;
+                    }
+
+                    if (container) {
+                        container.parentElement.style.maxWidth = "800px";
+                        container.parentElement.style.margin = "0 auto";
+                    }
+
+                    var html = '<div style="text-align:center;"><span class="subtitle">ofertownik</span><h1 class="title" style="margin-bottom: 30px;">Zbuduj zapytanie z Twoich produktów</h1></div>';
+                    html += '<ul style="list-style:none; padding:0; text-align:left; max-width: 800px; margin: 0 auto; background:#fff; padding: 25px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.08);">';
+                    
+                    cart.forEach(function(item, idx) {
+                        html += '<li style="padding: 15px 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">' +
+                                    '<div style="font-size: 18px; font-weight: 500; color: #333;">' +
+                                        item.name +
+                                    '</div>' +
+                                    '<button onclick="removeOfertownikItem(\'' + item.id + '\')" style="background:#dc3545; color:white; border:none; padding:8px 15px; border-radius:4px; cursor:pointer; font-weight:bold; transition: background 0.3s;" onmouseover="this.style.background=\'#c82333\'" onmouseout="this.style.background=\'#dc3545\'">X Usuń</button>' +
+                                '</li>';
+                    });
+
+                    html += '</ul>';
+                    html += '<div style="text-align:center;"><p class="txt" style="margin-top:40px; font-size:16px;">Przejdź do klienta pocztowego i wyślij wybrane produkty na adres <strong>info@gomarplus.pl</strong></p>';
+                    
+                    var mailBody = encodeURIComponent("Dzień dobry,\n\nProszę o ofertę na następujące produkty ze strony GOMARPLUS:\n\n" + cart.map(function(i) { return "• " + i.name; }).join("\n") + "\n\nProszę o kontakt zwrotny w sprawie powyższych.\n\nPozdrawiam,");
+                    html += '<div style="margin: 20px 0;"><a class="btn" href="mailto:info@gomarplus.pl?subject=Zapytanie ofertowe ze strony GOMARPLUS&body=' + mailBody + '">Wyślij zapytanie do GOMARPLUS <i class="far fa-envelope"></i></a></div>';
+                    
+                    html += '<br><button class="btn-naked" style="display:inline-block; margin: 10px auto; cursor:pointer; border:none; background:transparent; font-weight:bold; color:#999;" onclick="localStorage.removeItem(\'m_ofertownik\'); window.location.reload();">Opróżnij listę ofertownika</button></div>';
+
+                    containerBlock.innerHTML = html;
+                }
+
+                window.removeOfertownikItem = function(id) {
+                    var cart = JSON.parse(localStorage.getItem('m_ofertownik') || '[]');
+                    cart = cart.filter(function(item) { return item.id !== id; });
+                    localStorage.setItem('m_ofertownik', JSON.stringify(cart));
+                    window.location.reload();
+                };
+            });
+            </script>
+            </body></html>
